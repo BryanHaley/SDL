@@ -2255,8 +2255,18 @@ elseif(APPLE)
       if(SDL_OPENGL)
         set(SDL_VIDEO_OPENGL 1)
         set(SDL_VIDEO_OPENGL_CGL 1)
-        set(SDL_VIDEO_RENDER_OGL 1)
         set(HAVE_OPENGL TRUE)
+
+        # MooGL: OpenGL 4.6 on Metal in place of Apple's NSOpenGL. No
+        # SDL_VIDEO_RENDER_OGL: that renderer is legacy GL, which MooGL's core
+        # profile doesn't have, so SDL_Renderer uses Metal instead
+        set(MOOGL_LIBRARY "" CACHE FILEPATH "MooGL's libmoogl.dylib")
+        if(NOT MOOGL_LIBRARY)
+          message(FATAL_ERROR "Set MOOGL_LIBRARY to MooGL's libmoogl.dylib")
+        endif()
+        list(APPEND EXTRA_LIBS "${MOOGL_LIBRARY}")
+        list(APPEND EXTRA_LDFLAGS "-Wl,-rpath,@loader_path")
+        list(APPEND PKGCONFIG_LDFLAGS "-lmoogl")
       endif()
     endif()
 
