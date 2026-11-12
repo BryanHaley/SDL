@@ -39,6 +39,8 @@
 typedef struct GLMContextRec_t *GLMContext;
 extern GLMContext createGLMContext(unsigned format, unsigned type, unsigned depth_format, unsigned depth_type,
                                    unsigned stencil_format, unsigned stencil_type);
+extern GLMContext createGLMContextShared(unsigned format, unsigned type, unsigned depth_format, unsigned depth_type,
+                                         unsigned stencil_format, unsigned stencil_type, GLMContext share);
 extern void destroyGLMContext(GLMContext ctx);
 extern void MGLsetCurrentContext(GLMContext ctx);
 extern void MGLswapBuffers(GLMContext ctx);
@@ -132,10 +134,9 @@ SDL_GLContext Cocoa_GL_CreateContext(_THIS, SDL_Window * window)
         return NULL;
     }
 
-    if (_this->gl_config.share_with_current_context) {
-        SDL_SetError("MooGL contexts can't share objects yet");
-        return NULL;
-    }
+    /* SDL_GL_SHARE_WITH_CURRENT_CONTEXT shares with whatever is current now */
+    MGLSDLContext *share = _this->gl_config.share_with_current_context ?
+                           (MGLSDLContext *)SDL_GL_GetCurrentContext() : NULL;
 
     context = (MGLSDLContext *)SDL_calloc(1, sizeof(*context));
     if (!context) {
@@ -143,8 +144,9 @@ SDL_GLContext Cocoa_GL_CreateContext(_THIS, SDL_Window * window)
         return NULL;
     }
 
-    context->ctx = createGLMContext(MGL_BGRA, MGL_UNSIGNED_INT_8_8_8_8_REV, MGL_DEPTH_COMPONENT, MGL_FLOAT,
-                                    stencil ? MGL_STENCIL_INDEX8 : 0, stencil ? MGL_UNSIGNED_BYTE : 0);
+    context->ctx = createGLMContextShared(MGL_BGRA, MGL_UNSIGNED_INT_8_8_8_8_REV, MGL_DEPTH_COMPONENT, MGL_FLOAT,
+                                          stencil ? MGL_STENCIL_INDEX8 : 0, stencil ? MGL_UNSIGNED_BYTE : 0,
+                                          share ? share->ctx : NULL);
     if (!context->ctx) {
         SDL_free(context);
         SDL_SetError("MooGL couldn't create a context");
