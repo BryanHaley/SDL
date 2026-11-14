@@ -41,6 +41,9 @@ extern GLMContext createGLMContext(unsigned format, unsigned type, unsigned dept
                                    unsigned stencil_format, unsigned stencil_type);
 extern GLMContext createGLMContextShared(unsigned format, unsigned type, unsigned depth_format, unsigned depth_type,
                                          unsigned stencil_format, unsigned stencil_type, GLMContext share);
+extern GLMContext createGLMContextProfile(unsigned format, unsigned type, unsigned depth_format, unsigned depth_type,
+                                          unsigned stencil_format, unsigned stencil_type, GLMContext share,
+                                          unsigned profile);
 extern void destroyGLMContext(GLMContext ctx);
 extern void MGLsetCurrentContext(GLMContext ctx);
 extern void MGLswapBuffers(GLMContext ctx);
@@ -144,9 +147,12 @@ SDL_GLContext Cocoa_GL_CreateContext(_THIS, SDL_Window * window)
         return NULL;
     }
 
-    context->ctx = createGLMContextShared(MGL_BGRA, MGL_UNSIGNED_INT_8_8_8_8_REV, MGL_DEPTH_COMPONENT, MGL_FLOAT,
-                                          stencil ? MGL_STENCIL_INDEX8 : 0, stencil ? MGL_UNSIGNED_BYTE : 0,
-                                          share ? share->ctx : NULL);
+    /* a core context only when asked for one; otherwise the old calls work too */
+    const SDL_bool compat = _this->gl_config.profile_mask != SDL_GL_CONTEXT_PROFILE_CORE;
+
+    context->ctx = createGLMContextProfile(MGL_BGRA, MGL_UNSIGNED_INT_8_8_8_8_REV, MGL_DEPTH_COMPONENT, MGL_FLOAT,
+                                           stencil ? MGL_STENCIL_INDEX8 : 0, stencil ? MGL_UNSIGNED_BYTE : 0,
+                                           share ? share->ctx : NULL, compat ? 0x2 : 0x1);
     if (!context->ctx) {
         SDL_free(context);
         SDL_SetError("MooGL couldn't create a context");
@@ -173,10 +179,10 @@ SDL_GLContext Cocoa_GL_CreateContext(_THIS, SDL_Window * window)
         return NULL;
     }
 
-    /* SDL reports what was asked for; the context is 4.6 core */
+    /* the context is 4.6, core or compatibility */
     _this->gl_config.major_version = 4;
     _this->gl_config.minor_version = 6;
-    _this->gl_config.profile_mask = SDL_GL_CONTEXT_PROFILE_CORE;
+    _this->gl_config.profile_mask = compat ? SDL_GL_CONTEXT_PROFILE_COMPATIBILITY : SDL_GL_CONTEXT_PROFILE_CORE;
 
     return context;
 }}
