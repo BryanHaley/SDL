@@ -2706,6 +2706,16 @@ elseif(APPLE)
         set(SDL_VIDEO_OPENGL_CGL 1)
         set(SDL_VIDEO_RENDER_OGL 1)
         set(HAVE_OPENGL TRUE)
+
+        # MooGL: OpenGL 4.6 on Metal in place of Apple's NSOpenGL. Its
+        # compatibility contexts carry the legacy GL the opengl renderer
+        # draws with; Metal stays the default renderer
+        set(MOOGL_LIBRARY "" CACHE FILEPATH "MooGL's libmoogl.dylib")
+        if(NOT MOOGL_LIBRARY)
+          message(FATAL_ERROR "Set MOOGL_LIBRARY to MooGL's libmoogl.dylib")
+        endif()
+        sdl_link_dependency(moogl LIBS "${MOOGL_LIBRARY}" LINK_OPTIONS "-Wl,-rpath,@loader_path"
+                            PKG_CONFIG_LINK_OPTIONS "-lmoogl")
       endif()
     endif()
 
