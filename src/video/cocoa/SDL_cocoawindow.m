@@ -1862,8 +1862,9 @@ int Cocoa_CreateWindow(_THIS, SDL_Window * window)
         return 0;
     }
 
-    /* The rest of this macro mess is for OpenGL or OpenGL ES windows */
-#ifdef SDL_VIDEO_OPENGL_ES2
+    /* The rest of this macro mess is for OpenGL or OpenGL ES windows; MooGL
+       makes ES contexts itself, with no EGL surface */
+#if defined(SDL_VIDEO_OPENGL_ES2) && !defined(SDL_VIDEO_OPENGL_CGL)
     if (_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES) {
 #ifdef SDL_VIDEO_OPENGL_EGL
         if (Cocoa_GLES_SetupWindow(_this, window) < 0) {

@@ -126,13 +126,16 @@ SDL_GLContext Cocoa_GL_CreateContext(_THIS, SDL_Window * window)
     unsigned flags = 0;
     MGLSDLContext *context;
 
-    if (_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES) {
-        SDL_SetError("MooGL has no OpenGL ES");
+    const SDL_bool es = _this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES;
+
+    /* every ES request from 2.0 to 3.1 gets 3.1 */
+    if (es && (major < 2 || major > 3 || (major == 3 && minor > 1))) {
+        SDL_SetError("OpenGL ES %d.%d is not available; MooGL makes ES 2.0 to 3.1", major, minor);
         return NULL;
     }
 
     /* every request up to 4.6 gets 4.6 */
-    if (major > 4 || (major == 4 && minor > 6)) {
+    if (!es && (major > 4 || (major == 4 && minor > 6))) {
         SDL_SetError("OpenGL %d.%d is newer than MooGL's 4.6", major, minor);
         return NULL;
     }
@@ -152,7 +155,7 @@ SDL_GLContext Cocoa_GL_CreateContext(_THIS, SDL_Window * window)
 
     context->ctx = createGLMContextProfile(MGL_BGRA, MGL_UNSIGNED_INT_8_8_8_8_REV, MGL_DEPTH_COMPONENT, MGL_FLOAT,
                                            stencil ? MGL_STENCIL_INDEX8 : 0, stencil ? MGL_UNSIGNED_BYTE : 0,
-                                           share ? share->ctx : NULL, compat ? 0x2 : 0x1);
+                                           share ? share->ctx : NULL, es ? 0x4 : compat ? 0x2 : 0x1);
     if (!context->ctx) {
         SDL_free(context);
         SDL_SetError("MooGL couldn't create a context");
@@ -179,10 +182,12 @@ SDL_GLContext Cocoa_GL_CreateContext(_THIS, SDL_Window * window)
         return NULL;
     }
 
-    /* the context is 4.6, core or compatibility */
-    _this->gl_config.major_version = 4;
-    _this->gl_config.minor_version = 6;
-    _this->gl_config.profile_mask = compat ? SDL_GL_CONTEXT_PROFILE_COMPATIBILITY : SDL_GL_CONTEXT_PROFILE_CORE;
+    /* the context is ES 3.1, or 4.6 core or compatibility */
+    _this->gl_config.major_version = es ? 3 : 4;
+    _this->gl_config.minor_version = es ? 1 : 6;
+    if (!es) {
+        _this->gl_config.profile_mask = compat ? SDL_GL_CONTEXT_PROFILE_COMPATIBILITY : SDL_GL_CONTEXT_PROFILE_CORE;
+    }
 
     return context;
 }}
