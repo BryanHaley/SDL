@@ -2550,7 +2550,8 @@ bool Cocoa_CreateWindow(SDL_VideoDevice *_this, SDL_Window *window, SDL_Properti
 #pragma clang diagnostic pop
 #endif
 
-#ifdef SDL_VIDEO_OPENGL_ES2
+// MooGL makes ES contexts itself, with no EGL surface
+#if defined(SDL_VIDEO_OPENGL_ES2) && !defined(SDL_VIDEO_OPENGL_CGL)
 #ifdef SDL_VIDEO_OPENGL_EGL
         if ((window->flags & SDL_WINDOW_OPENGL) &&
             _this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES) {
@@ -2574,7 +2575,7 @@ bool Cocoa_CreateWindow(SDL_VideoDevice *_this, SDL_Window *window, SDL_Properti
         }
 
         // The rest of this macro mess is for OpenGL or OpenGL ES windows
-#ifdef SDL_VIDEO_OPENGL_ES2
+#if defined(SDL_VIDEO_OPENGL_ES2) && !defined(SDL_VIDEO_OPENGL_CGL)
         if (_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES) {
 #ifdef SDL_VIDEO_OPENGL_EGL
             if (!Cocoa_GLES_SetupWindow(_this, window)) {
