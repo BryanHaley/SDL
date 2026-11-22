@@ -45,6 +45,7 @@ extern void MGLsetCurrentContext(GLMContext ctx);
 extern void MGLswapBuffers(GLMContext ctx);
 extern void MGLsetSwapInterval(GLMContext ctx, int interval);
 extern void MGLsetContextFlags(GLMContext ctx, unsigned flags);
+extern void MGLsetContextView(GLMContext ctx, void *view);
 
 @interface MGLRenderer : NSObject
 - (void)createMGLRendererAndBindToContext:(GLMContext)glm_ctx view:(NSView *)view;
@@ -196,9 +197,13 @@ bool Cocoa_GL_MakeCurrent(SDL_VideoDevice *_this, SDL_Window *window, SDL_GLCont
         return true;
     }
 
-    // a MooGL context draws into the view it was made for
+    // the context's drawing moves to the new window, as NSOpenGLContext's does
     if (window && window != mgl->window) {
-        return SDL_SetError("MooGL: a context can only be current on the window it was created for");
+        @autoreleasepool {
+            SDL_CocoaWindowData *data = (__bridge SDL_CocoaWindowData *)window->internal;
+            MGLsetContextView(mgl->ctx, (__bridge void *)data.sdlContentView);
+        }
+        mgl->window = window;
     }
 
     MGLsetCurrentContext(mgl->ctx);
